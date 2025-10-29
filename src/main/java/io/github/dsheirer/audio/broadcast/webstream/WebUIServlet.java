@@ -1214,8 +1214,7 @@ public class WebUIServlet extends HttpServlet
             
             // Connect to audio and waveform WebSockets
             setTimeout(() => {
-                connectAudio();
-                connectWaveform();
+                connect();
             }, 500);
         });
     </script>
