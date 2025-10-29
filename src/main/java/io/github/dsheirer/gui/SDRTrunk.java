@@ -226,7 +226,8 @@ public class SDRTrunk implements Listener<TunerEvent>
             mUserPreferences);
         mAudioStreamingManager.start();
 
-        mWebStreamServer = new WebStreamServer(8080);
+        mWebStreamServer = new WebStreamServer(8080, mPlaylistManager.getChannelModel(), 
+            mPlaylistManager.getChannelProcessingManager());
         try
         {
             mWebStreamServer.start();

@@ -20,6 +20,8 @@
 package io.github.dsheirer.audio.broadcast.webstream;
 
 import io.github.dsheirer.audio.AudioSegment;
+import io.github.dsheirer.controller.channel.ChannelModel;
+import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.sample.Listener;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -40,11 +42,15 @@ public class WebStreamServer implements Listener<AudioSegment>
     private int mPort;
     private WebStreamAudioBroadcaster mBroadcaster;
     private boolean mRunning = false;
+    private ChannelModel mChannelModel;
+    private ChannelProcessingManager mChannelProcessingManager;
 
-    public WebStreamServer(int port)
+    public WebStreamServer(int port, ChannelModel channelModel, ChannelProcessingManager channelProcessingManager)
     {
         mPort = port;
         mBroadcaster = new WebStreamAudioBroadcaster();
+        mChannelModel = channelModel;
+        mChannelProcessingManager = channelProcessingManager;
     }
 
     public void start() throws Exception
@@ -66,7 +72,11 @@ public class WebStreamServer implements Listener<AudioSegment>
         mServer.setHandler(context);
 
         ServletHolder holderWebUI = new ServletHolder("web-ui", new WebUIServlet());
-        context.addServlet(holderWebUI, "/*");
+        context.addServlet(holderWebUI, "/");
+        
+        ServletHolder holderChannelControl = new ServletHolder("channel-control", 
+            new ChannelControlServlet(mChannelModel, mChannelProcessingManager));
+        context.addServlet(holderChannelControl, "/api/channels");
 
         JettyWebSocketServletContainerInitializer.configure(context, (servletContext, wsContainer) ->
         {

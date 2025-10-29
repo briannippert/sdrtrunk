@@ -239,6 +239,121 @@ public class WebUIServlet extends HttpServlet
             justify-content: center;
         }
         
+        .channel-control {
+            background: #000;
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+        
+        .channel-control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            cursor: pointer;
+            padding: 5px;
+        }
+        
+        .channel-control-header:hover {
+            background: rgba(0, 255, 0, 0.1);
+        }
+        
+        .channel-control-title {
+            color: #00aa00;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .toggle-icon {
+            color: #00ff00;
+            font-size: 1.2em;
+        }
+        
+        .channel-list {
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .channel-list.expanded {
+            display: block;
+        }
+        
+        .channel-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin: 5px 0;
+            background: rgba(0, 255, 0, 0.05);
+            border: 1px solid #003300;
+            border-radius: 4px;
+        }
+        
+        .channel-item:hover {
+            background: rgba(0, 255, 0, 0.1);
+        }
+        
+        .channel-item-name {
+            color: #00ff00;
+            flex: 1;
+        }
+        
+        .channel-item-status {
+            color: #00aa00;
+            font-size: 0.8em;
+            margin: 0 10px;
+        }
+        
+        .channel-item-status.running {
+            color: #00ff00;
+        }
+        
+        .channel-item-btn {
+            padding: 5px 15px;
+            font-size: 0.8em;
+            background: #000;
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+        }
+        
+        .channel-item-btn:hover {
+            background: #00ff00;
+            color: #000;
+        }
+        
+        .channel-item-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            border-color: #555;
+            color: #555;
+        }
+        
+        .refresh-btn {
+            padding: 5px 10px;
+            font-size: 0.8em;
+            background: #000;
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            margin-left: 10px;
+        }
+        
+        .refresh-btn:hover {
+            background: #00ff00;
+            color: #000;
+        }
+        
         .visualizer {
             height: 80px;
             background: #000;
@@ -332,6 +447,21 @@ public class WebUIServlet extends HttpServlet
             <div class="channel-name" id="channelName">---</div>
         </div>
         
+        <div class="channel-control">
+            <div class="channel-control-header" onclick="toggleChannelList()">
+                <span class="channel-control-title">Channel Control</span>
+                <span>
+                    <button class="refresh-btn" onclick="loadChannels(event)">⟳ REFRESH</button>
+                    <span class="toggle-icon" id="toggleIcon">▼</span>
+                </span>
+            </div>
+            <div class="channel-list" id="channelList">
+                <div style="color: #00aa00; text-align: center; padding: 20px;">
+                    Click REFRESH to load channels
+                </div>
+            </div>
+        </div>
+        
         <div class="controls">
             <button id="connectBtn" onclick="connect()">CONNECT</button>
             <button id="playBtn" onclick="play()" disabled>MONITOR</button>
@@ -390,6 +520,96 @@ public class WebUIServlet extends HttpServlet
         let packetCount = 0;
         const sampleRate = 8000;
         let currentChannelName = '---';
+        let channelListExpanded = false;
+        
+        function toggleChannelList() {
+            channelListExpanded = !channelListExpanded;
+            const list = document.getElementById('channelList');
+            const icon = document.getElementById('toggleIcon');
+            
+            if (channelListExpanded) {
+                list.classList.add('expanded');
+                icon.textContent = '▲';
+            } else {
+                list.classList.remove('expanded');
+                icon.textContent = '▼';
+            }
+        }
+        
+        function loadChannels(event) {
+            if (event) event.stopPropagation();
+            
+            fetch('/api/channels?action=list')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayChannels(data.channels);
+                    } else {
+                        console.error('Failed to load channels:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading channels:', error);
+                    document.getElementById('channelList').innerHTML = 
+                        '<div style="color: #ff3333; text-align: center; padding: 20px;">ERROR: ' + error.message + '</div>';
+                });
+        }
+        
+        function displayChannels(channels) {
+            const list = document.getElementById('channelList');
+            
+            if (channels.length === 0) {
+                list.innerHTML = '<div style="color: #00aa00; text-align: center; padding: 20px;">No channels configured</div>';
+                return;
+            }
+            
+            list.innerHTML = '';
+            channels.forEach(channel => {
+                const item = document.createElement('div');
+                item.className = 'channel-item';
+                
+                const name = document.createElement('span');
+                name.className = 'channel-item-name';
+                name.textContent = channel.name;
+                
+                const status = document.createElement('span');
+                status.className = 'channel-item-status' + (channel.processing ? ' running' : '');
+                status.textContent = channel.processing ? '● RUNNING' : '○ STOPPED';
+                
+                const btn = document.createElement('button');
+                btn.className = 'channel-item-btn';
+                btn.textContent = channel.processing ? 'STOP' : 'START';
+                btn.onclick = () => toggleChannel(channel.name, channel.processing);
+                
+                item.appendChild(name);
+                item.appendChild(status);
+                item.appendChild(btn);
+                list.appendChild(item);
+            });
+        }
+        
+        function toggleChannel(channelName, isRunning) {
+            const action = isRunning ? 'stop' : 'start';
+            
+            fetch('/api/channels?action=' + action + '&channel=' + encodeURIComponent(channelName), {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log(data.message);
+                    // Reload channels after a short delay
+                    setTimeout(() => loadChannels(null), 500);
+                } else {
+                    console.error('Error:', data.error);
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error toggling channel:', error);
+                alert('Error: ' + error.message);
+            });
+        }
         
         function updateStatus(text, className) {
             const status = document.getElementById('status');
