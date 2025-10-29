@@ -23,6 +23,11 @@ import io.github.dsheirer.audio.AudioSegment;
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.complex.ComplexSamples;
+import io.github.dsheirer.source.tuner.manager.TunerManager;
+import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
+import io.github.dsheirer.source.tuner.Tuner;
+import io.github.dsheirer.source.tuner.TunerController;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import org.eclipse.jetty.server.Server;
@@ -34,6 +39,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 
 public class WebStreamServer implements Listener<AudioSegment>
 {
@@ -41,16 +48,28 @@ public class WebStreamServer implements Listener<AudioSegment>
     private Server mServer;
     private int mPort;
     private WebStreamAudioBroadcaster mBroadcaster;
+    private WebStreamWaveformBroadcaster mWaveformBroadcaster;
+    private Map<String, WaveformSampleTap> mWaveformTaps;
     private boolean mRunning = false;
     private ChannelModel mChannelModel;
     private ChannelProcessingManager mChannelProcessingManager;
+    private TunerManager mTunerManager;
 
-    public WebStreamServer(int port, ChannelModel channelModel, ChannelProcessingManager channelProcessingManager)
+    public WebStreamServer(int port, ChannelModel channelModel, ChannelProcessingManager channelProcessingManager, 
+                           TunerManager tunerManager)
     {
         mPort = port;
         mBroadcaster = new WebStreamAudioBroadcaster();
+        mWaveformBroadcaster = new WebStreamWaveformBroadcaster();
+        mWaveformTaps = new HashMap<>();
         mChannelModel = channelModel;
         mChannelProcessingManager = channelProcessingManager;
+        mTunerManager = tunerManager;
+    }
+    
+    public WebStreamWaveformBroadcaster getWaveformBroadcaster()
+    {
+        return mWaveformBroadcaster;
     }
 
     public void start() throws Exception
@@ -85,12 +104,58 @@ public class WebStreamServer implements Listener<AudioSegment>
             wsContainer.setIdleTimeout(Duration.ofMinutes(10));
             
             wsContainer.addMapping("/audio", (req, resp) -> new AudioWebSocket(mBroadcaster));
+            wsContainer.addMapping("/waveform", (req, resp) -> new WaveformWebSocket(mWaveformBroadcaster));
         });
 
         mServer.start();
         mRunning = true;
         mLog.info("Web stream server started on port " + mPort + " (listening on all interfaces)");
         mLog.info("Access the UI at: http://localhost:" + mPort);
+        
+        attachWaveformTapsToTuners();
+    }
+    
+    private void attachWaveformTapsToTuners()
+    {
+        if(mTunerManager != null)
+        {
+            for(DiscoveredTuner discoveredTuner : mTunerManager.getAvailableTuners())
+            {
+                if(discoveredTuner.hasTuner())
+                {
+                    attachWaveformTapToTuner(discoveredTuner.getTuner());
+                }
+            }
+        }
+    }
+    
+    public void attachWaveformTapToTuner(Tuner tuner)
+    {
+        if(tuner != null && !mWaveformTaps.containsKey(tuner.getUniqueID()))
+        {
+            TunerController controller = tuner.getTunerController();
+            if(controller != null)
+            {
+                WaveformSampleTap tap = new WaveformSampleTap(mWaveformBroadcaster);
+                controller.addBufferListener(tap);
+                mWaveformTaps.put(tuner.getUniqueID(), tap);
+                mLog.info("Attached waveform tap to tuner: " + tuner.getPreferredName());
+            }
+        }
+    }
+    
+    public void detachWaveformTapFromTuner(Tuner tuner)
+    {
+        if(tuner != null && mWaveformTaps.containsKey(tuner.getUniqueID()))
+        {
+            TunerController controller = tuner.getTunerController();
+            WaveformSampleTap tap = mWaveformTaps.remove(tuner.getUniqueID());
+            if(controller != null && tap != null)
+            {
+                controller.removeBufferListener(tap);
+                mLog.info("Detached waveform tap from tuner: " + tuner.getPreferredName());
+            }
+        }
     }
 
     public void stop() throws Exception

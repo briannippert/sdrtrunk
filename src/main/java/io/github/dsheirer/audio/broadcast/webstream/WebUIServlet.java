@@ -75,8 +75,9 @@ public class WebUIServlet extends HttpServlet
             border-radius: 15px;
             box-shadow: 0 0 40px rgba(0, 255, 0, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.5);
             padding: 30px;
-            max-width: 600px;
-            width: 100%;
+            max-width: 95%;
+            width: 95%;
+            margin: 0 auto;
             position: relative;
         }
         
@@ -112,6 +113,64 @@ public class WebUIServlet extends HttpServlet
             letter-spacing: 2px;
         }
         
+        .top-bar {
+            display: grid;
+            grid-template-columns: 200px 1fr 280px;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .top-bar-section {
+            background: #000;
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            padding: 10px 15px;
+            box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+        
+        .top-bar-label {
+            color: #00aa00;
+            font-size: 0.65em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        
+        .top-bar-channel {
+            text-align: center;
+        }
+        
+        .top-bar-controls {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .control-buttons {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        
+        .small-btn {
+            flex: 1;
+            padding: 6px 10px;
+            font-size: 0.75em;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            border: 1px solid #00ff00;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #000;
+            color: #00ff00;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+        }
+        
+        .small-btn:hover {
+            background: #00ff00;
+            color: #000;
+        }
+        
         .status-panel {
             background: #000;
             border: 2px solid #00ff00;
@@ -122,11 +181,10 @@ public class WebUIServlet extends HttpServlet
         }
         
         .status {
-            text-align: center;
-            padding: 12px;
+            padding: 8px;
             border-radius: 5px;
             font-weight: bold;
-            font-size: 1.2em;
+            font-size: 0.9em;
             text-transform: uppercase;
             letter-spacing: 2px;
             position: relative;
@@ -134,8 +192,8 @@ public class WebUIServlet extends HttpServlet
         
         .status::before {
             content: '●';
-            font-size: 1.5em;
-            margin-right: 10px;
+            font-size: 1.2em;
+            margin-right: 8px;
             animation: pulse 1.5s infinite;
         }
         
@@ -230,13 +288,12 @@ public class WebUIServlet extends HttpServlet
         
         .channel-name {
             color: #00ff00;
-            font-size: 1.8em;
+            font-size: 1.1em;
             font-weight: bold;
             text-shadow: 0 0 10px #00ff00;
-            min-height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         .channel-control {
@@ -246,31 +303,11 @@ public class WebUIServlet extends HttpServlet
             padding: 15px;
             margin-bottom: 20px;
             box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.2);
+            display: none;
         }
         
-        .channel-control-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            cursor: pointer;
-            padding: 5px;
-        }
-        
-        .channel-control-header:hover {
-            background: rgba(0, 255, 0, 0.1);
-        }
-        
-        .channel-control-title {
-            color: #00aa00;
-            font-size: 0.9em;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-        
-        .toggle-icon {
-            color: #00ff00;
-            font-size: 1.2em;
+        .channel-control.expanded {
+            display: block;
         }
         
         .channel-list {
@@ -446,29 +483,6 @@ public class WebUIServlet extends HttpServlet
             color: #000;
         }
         
-        .visualizer {
-            height: 80px;
-            background: #000;
-            border: 2px solid #00ff00;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-around;
-            padding: 5px;
-            gap: 1px;
-            box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.2);
-        }
-        
-        .bar {
-            flex: 1;
-            background: linear-gradient(to top, #00ff00, #00aa00);
-            border-radius: 2px;
-            transition: height 0.1s ease;
-            min-height: 2px;
-            box-shadow: 0 0 5px #00ff00;
-        }
-        
         .info {
             background: #000;
             border: 2px solid #00ff00;
@@ -522,6 +536,101 @@ public class WebUIServlet extends HttpServlet
             animation: scanline 4s linear infinite;
             pointer-events: none;
         }
+        
+        .waveform-container {
+            background: #000;
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+        
+        .waveform-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .waveform-label {
+            color: #00aa00;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .waveform-status {
+            color: #00ff00;
+            font-size: 0.75em;
+            display: flex;
+            gap: 15px;
+        }
+        
+        .waveform-stat {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .waveform-stat-label {
+            color: #00aa00;
+        }
+        
+        .waveform-stat-value {
+            color: #00ff00;
+            font-weight: bold;
+        }
+        
+        #waveformCanvas {
+            width: 100%;
+            height: 200px;
+            background: #000;
+            border: 1px solid #003300;
+            border-radius: 4px;
+            display: block;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .dashboard-main {
+            grid-column: 1;
+        }
+        
+        .dashboard-side {
+            grid-column: 2;
+        }
+        
+        .info-section-title {
+            color: #00ff00;
+            font-size: 0.9em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #00ff00;
+            text-align: center;
+        }
+        
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-main,
+            .dashboard-side {
+                grid-column: 1;
+            }
+            
+            .top-bar {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -530,24 +639,28 @@ public class WebUIServlet extends HttpServlet
         <h1>⚡ SCANNER ⚡</h1>
         <div class="subtitle">SDRTrunk Live Monitor</div>
         
-        <div class="status-panel">
-            <div class="status disconnected" id="status">OFFLINE</div>
-        </div>
-        
-        <div class="channel-display">
-            <div class="channel-label">[ ACTIVE CHANNEL ]</div>
-            <div class="channel-name" id="channelName">---</div>
-        </div>
-        
-        <div class="channel-control">
-            <div class="channel-control-header" onclick="toggleChannelList()">
-                <span class="channel-control-title">Channel Control</span>
-                <span>
-                    <button class="refresh-btn" onclick="showAddForm(event)">+ ADD</button>
-                    <button class="refresh-btn" onclick="loadChannels(event)">⟳ REFRESH</button>
-                    <span class="toggle-icon" id="toggleIcon">▼</span>
-                </span>
+        <div class="top-bar">
+            <div class="top-bar-section">
+                <div class="top-bar-label">STATUS</div>
+                <div class="status disconnected" id="status">OFFLINE</div>
             </div>
+            
+            <div class="top-bar-section top-bar-channel">
+                <div class="top-bar-label">ACTIVE CHANNEL</div>
+                <div class="channel-name" id="channelName">---</div>
+            </div>
+            
+            <div class="top-bar-section top-bar-controls">
+                <div class="top-bar-label">CONTROLS</div>
+                <div class="control-buttons">
+                    <button class="small-btn" onclick="toggleChannelList()">CHANNELS <span id="toggleIcon">▼</span></button>
+                    <button class="small-btn" onclick="loadChannels(event)">⟳</button>
+                    <button class="small-btn" onclick="showAddForm(event)">+</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="channel-control" id="channelControlPanel">
             
             <div class="add-channel-form" id="addChannelForm">
                 <div class="form-row">
@@ -594,51 +707,49 @@ public class WebUIServlet extends HttpServlet
             <button id="stopBtn" onclick="stop()" disabled>MUTE</button>
         </div>
         
-        <div class="visualizer" id="visualizer">
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-        </div>
-        
-        <div class="info">
-            <div class="info-item">
-                <span class="info-label">Sample Rate</span>
-                <span class="info-value">8000 Hz</span>
+        <div class="dashboard-grid">
+            <div class="waveform-container dashboard-main">
+                <div class="waveform-header">
+                    <div class="waveform-label">🌊 IQ WAVEFORM</div>
+                    <div class="waveform-status">
+                        <div class="waveform-stat">
+                            <span class="waveform-stat-label">Samples:</span>
+                            <span class="waveform-stat-value" id="waveformSamples">0</span>
+                        </div>
+                        <div class="waveform-stat">
+                            <span class="waveform-stat-label">Rate:</span>
+                            <span class="waveform-stat-value" id="waveformRate">0 Hz</span>
+                        </div>
+                    </div>
+                </div>
+                <canvas id="waveformCanvas" width="1400" height="200"></canvas>
             </div>
-            <div class="info-item">
-                <span class="info-label">Audio Mode</span>
-                <span class="info-value">MONO</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Format</span>
-                <span class="info-value">16-BIT PCM</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Packets RX</span>
-                <span class="info-value" id="packetCount">0</span>
+            
+            <div class="info dashboard-side">
+                <div class="info-section-title">AUDIO INFO</div>
+                <div class="info-item">
+                    <span class="info-label">Sample Rate</span>
+                    <span class="info-value">8000 Hz</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Audio Mode</span>
+                    <span class="info-value">MONO</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Format</span>
+                    <span class="info-value">16-BIT PCM</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Packets RX</span>
+                    <span class="info-value" id="packetCount">0</span>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         let ws = null;
+        let waveformWs = null;
         let audioContext = null;
         let audioQueue = [];
         let isPlaying = false;
@@ -648,15 +759,24 @@ public class WebUIServlet extends HttpServlet
         let currentChannelName = '---';
         let channelListExpanded = false;
         
+        // Waveform visualization
+        const waveformCanvas = document.getElementById('waveformCanvas');
+        const waveformCtx = waveformCanvas.getContext('2d');
+        let waveformUpdateCount = 0;
+        let waveformLastUpdateTime = Date.now();
+        
         function toggleChannelList() {
             channelListExpanded = !channelListExpanded;
+            const panel = document.getElementById('channelControlPanel');
             const list = document.getElementById('channelList');
             const icon = document.getElementById('toggleIcon');
             
             if (channelListExpanded) {
+                panel.classList.add('expanded');
                 list.classList.add('expanded');
                 icon.textContent = '▲';
             } else {
+                panel.classList.remove('expanded');
                 list.classList.remove('expanded');
                 icon.textContent = '▼';
             }
@@ -891,7 +1011,127 @@ public class WebUIServlet extends HttpServlet
                 document.getElementById('stopBtn').disabled = true;
                 document.getElementById('channelName').textContent = '---';
                 isPlaying = false;
+                
+                // Also close waveform WebSocket
+                if (waveformWs) {
+                    waveformWs.close();
+                    waveformWs = null;
+                }
             };
+            
+            // Connect to waveform WebSocket
+            connectWaveform();
+        }
+        
+        function connectWaveform() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = protocol + '//' + window.location.host + '/waveform';
+            
+            waveformWs = new WebSocket(wsUrl);
+            waveformWs.binaryType = 'arraybuffer';
+            
+            waveformWs.onopen = function() {
+                console.log('Waveform WebSocket connected');
+            };
+            
+            waveformWs.onmessage = function(event) {
+                drawWaveform(event.data);
+                
+                // Update rate counter
+                waveformUpdateCount++;
+                const now = Date.now();
+                if (now - waveformLastUpdateTime >= 1000) {
+                    const rate = waveformUpdateCount / ((now - waveformLastUpdateTime) / 1000);
+                    document.getElementById('waveformRate').textContent = rate.toFixed(1) + ' Hz';
+                    waveformUpdateCount = 0;
+                    waveformLastUpdateTime = now;
+                }
+            };
+            
+            waveformWs.onerror = function(error) {
+                console.error('Waveform WebSocket error:', error);
+            };
+            
+            waveformWs.onclose = function() {
+                console.log('Waveform WebSocket closed');
+            };
+        }
+        
+        function drawWaveform(data) {
+            const view = new DataView(data);
+            const sampleCount = view.getInt32(0, true);
+            const timestamp = view.getUint32(4, true);
+            
+            document.getElementById('waveformSamples').textContent = sampleCount;
+            
+            const width = waveformCanvas.width;
+            const height = waveformCanvas.height;
+            const centerY = height / 2;
+            
+            // Clear canvas
+            waveformCtx.fillStyle = '#000';
+            waveformCtx.fillRect(0, 0, width, height);
+            
+            // Draw grid lines
+            waveformCtx.strokeStyle = '#0a0a0a';
+            waveformCtx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = (height / 4) * i;
+                waveformCtx.beginPath();
+                waveformCtx.moveTo(0, y);
+                waveformCtx.lineTo(width, y);
+                waveformCtx.stroke();
+            }
+            
+            // Draw center line
+            waveformCtx.strokeStyle = '#1a1a1a';
+            waveformCtx.lineWidth = 1;
+            waveformCtx.beginPath();
+            waveformCtx.moveTo(0, centerY);
+            waveformCtx.lineTo(width, centerY);
+            waveformCtx.stroke();
+            
+            if (sampleCount === 0) return;
+            
+            // Draw I channel (in-phase) - Green
+            waveformCtx.strokeStyle = '#00ff00';
+            waveformCtx.lineWidth = 1.5;
+            waveformCtx.beginPath();
+            
+            for (let i = 0; i < sampleCount; i++) {
+                const offset = 8 + i * 8;
+                const iValue = view.getFloat32(offset, true);
+                const x = (i / (sampleCount - 1)) * width;
+                const y = centerY - (iValue * centerY * 0.85);
+                
+                if (i === 0) {
+                    waveformCtx.moveTo(x, y);
+                } else {
+                    waveformCtx.lineTo(x, y);
+                }
+            }
+            waveformCtx.stroke();
+            
+            // Draw Q channel (quadrature) - Magenta
+            waveformCtx.strokeStyle = '#ff00ff';
+            waveformCtx.lineWidth = 1.5;
+            waveformCtx.globalAlpha = 0.7;
+            waveformCtx.beginPath();
+            
+            for (let i = 0; i < sampleCount; i++) {
+                const offset = 12 + i * 8;
+                const qValue = view.getFloat32(offset, true);
+                const x = (i / (sampleCount - 1)) * width;
+                const y = centerY - (qValue * centerY * 0.85);
+                
+                if (i === 0) {
+                    waveformCtx.moveTo(x, y);
+                } else {
+                    waveformCtx.lineTo(x, y);
+                }
+            }
+            waveformCtx.stroke();
+            waveformCtx.globalAlpha = 1.0;
         }
         
         function play() {
@@ -939,7 +1179,6 @@ public class WebUIServlet extends HttpServlet
             }
             
             audioQueue.push(float32Array);
-            updateVisualizer(float32Array);
             
             if (isPlaying) {
                 processQueue();
@@ -964,25 +1203,6 @@ public class WebUIServlet extends HttpServlet
                 source.start(nextStartTime);
                 nextStartTime += audioBuffer.duration;
             }
-        }
-        
-        function updateVisualizer(audioData) {
-            const bars = document.querySelectorAll('.bar');
-            const segmentSize = Math.floor(audioData.length / bars.length);
-            
-            bars.forEach((bar, index) => {
-                const start = index * segmentSize;
-                const end = start + segmentSize;
-                let sum = 0;
-                
-                for (let i = start; i < end && i < audioData.length; i++) {
-                    sum += Math.abs(audioData[i]);
-                }
-                
-                const average = sum / segmentSize;
-                const height = Math.min(100, average * 300);
-                bar.style.height = height + '%';
-            });
         }
     </script>
 </body>

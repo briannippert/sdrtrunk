@@ -24,6 +24,7 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.source.ChannelizerType;
 import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceException;
+import io.github.dsheirer.source.config.SourceConfigRecording;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import io.github.dsheirer.source.config.SourceConfiguration;
@@ -403,7 +404,7 @@ public class TunerManager implements IDiscoveredTunerStatusListener
                         new DiscoveredRecordingTuner(mUserPreferences, recordingTunerConfiguration);
 
                 discoveredRecordingTuner.addTunerStatusListener(this);
-                discoveredRecordingTuner.setEnabled(false);
+                discoveredRecordingTuner.setEnabled(true);
                 mLog.info("Tuner Added: " + discoveredRecordingTuner);
                 mDiscoveredTunerModel.addDiscoveredTuner(discoveredRecordingTuner);
             }
@@ -559,6 +560,16 @@ public class TunerManager implements IDiscoveredTunerStatusListener
                                 sourceConfigTuner.getFrequencies(), channelSpecification,
                                 sourceConfigTuner.getPreferredTuner(), threadName + " MULTI FREQ");
                     }
+                }
+                break;
+            case RECORDING:
+                if(config instanceof SourceConfigRecording)
+                {
+                    SourceConfigRecording sourceConfigRecording = (SourceConfigRecording)config;
+                    TunerChannel tunerChannel = sourceConfigRecording.getTunerChannel();
+                    String preferredTuner = sourceConfigRecording.getRecordingAlias();
+                    retVal = getSource(tunerChannel, channelSpecification, preferredTuner, threadName +
+                            " " + tunerChannel.getFrequency());
                 }
                 break;
             default:

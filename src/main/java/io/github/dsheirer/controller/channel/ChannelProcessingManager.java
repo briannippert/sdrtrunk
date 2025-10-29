@@ -411,6 +411,10 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             {
                 Platform.runLater(() -> channel.setProcessing(false));
             }
+            else
+            {
+                channel.setProcessing(false);
+            }
 
             mChannelEventBroadcaster.broadcast(new ChannelEvent(channel,
                 ChannelEvent.Event.NOTIFICATION_PROCESSING_START_REJECTED, TUNER_UNAVAILABLE_DESCRIPTION));

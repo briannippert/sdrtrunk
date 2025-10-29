@@ -45,9 +45,6 @@ public class DiscoveredRecordingTuner extends DiscoveredTuner
     {
         mUserPreferences = userPreferences;
         setTunerConfiguration(recordingTunerConfiguration);
-
-        //Default all recordings to be disabled on startup
-        setEnabled(false);
     }
 
     /**

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SDRTrunk Waveform Viewer Test</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #1a1a1a;
+            border: 2px solid #00ff00;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+        }
+        
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            font-family: 'Courier New', monospace;
+            border: 2px solid #00ff00;
+            background: #000;
+            color: #00ff00;
+            cursor: pointer;
+            margin: 5px;
+            border-radius: 5px;
+        }
+        
+        button:hover {
+            background: #00ff00;
+            color: #000;
+        }
+        
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+            background: #000;
+        }
+        
+        .waveform-container {
+            background: #000;
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .waveform-label {
+            color: #00aa00;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        canvas {
+            width: 100%;
+            background: #000;
+            border: 1px solid #333;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .stat {
+            background: #000;
+            border: 1px solid #00ff00;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        .stat-label {
+            color: #00aa00;
+            font-size: 0.8em;
+        }
+        
+        .stat-value {
+            color: #00ff00;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SDRTrunk Waveform Viewer</h1>
+        
+        <div class="status" id="status">Status: Disconnected</div>
+        
+        <div>
+            <button onclick="connectWaveform()">Connect</button>
+            <button onclick="disconnectWaveform()">Disconnect</button>
+        </div>
+        
+        <div class="waveform-container">
+            <div class="waveform-label">IQ WAVEFORM (I = Green, Q = Magenta)</div>
+            <canvas id="waveformCanvas" width="800" height="300"></canvas>
+        </div>
+        
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-label">Packets Received</div>
+                <div class="stat-value" id="packetCount">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Sample Count</div>
+                <div class="stat-value" id="sampleCount">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Update Rate</div>
+                <div class="stat-value" id="updateRate">0 Hz</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Connection</div>
+                <div class="stat-value" id="connectionStatus">Not Connected</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let waveformWs = null;
+        const waveformCanvas = document.getElementById('waveformCanvas');
+        const waveformCtx = waveformCanvas.getContext('2d');
+        let packetCount = 0;
+        let lastUpdateTime = Date.now();
+        let updateCount = 0;
+        
+        function updateStatus(message) {
+            document.getElementById('status').textContent = 'Status: ' + message;
+        }
+        
+        function connectWaveform() {
+            if (waveformWs && waveformWs.readyState === WebSocket.OPEN) {
+                updateStatus('Already connected');
+                return;
+            }
+            
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/waveform`;
+            
+            updateStatus('Connecting to ' + wsUrl);
+            
+            waveformWs = new WebSocket(wsUrl);
+            waveformWs.binaryType = 'arraybuffer';
+            
+            waveformWs.onopen = () => {
+                updateStatus('Connected');
+                document.getElementById('connectionStatus').textContent = 'Connected';
+                packetCount = 0;
+            };
+            
+            waveformWs.onmessage = (event) => {
+                packetCount++;
+                document.getElementById('packetCount').textContent = packetCount;
+                drawWaveform(event.data);
+                
+                // Calculate update rate
+                updateCount++;
+                const now = Date.now();
+                if (now - lastUpdateTime >= 1000) {
+                    const rate = updateCount / ((now - lastUpdateTime) / 1000);
+                    document.getElementById('updateRate').textContent = rate.toFixed(1) + ' Hz';
+                    updateCount = 0;
+                    lastUpdateTime = now;
+                }
+            };
+            
+            waveformWs.onerror = (error) => {
+                updateStatus('WebSocket error');
+                console.error('Waveform WebSocket error:', error);
+            };
+            
+            waveformWs.onclose = () => {
+                updateStatus('Disconnected');
+                document.getElementById('connectionStatus').textContent = 'Disconnected';
+            };
+        }
+        
+        function disconnectWaveform() {
+            if (waveformWs) {
+                waveformWs.close();
+                waveformWs = null;
+                updateStatus('Disconnected');
+            }
+        }
+        
+        function drawWaveform(data) {
+            const view = new DataView(data);
+            const sampleCount = view.getInt32(0, true);
+            const timestamp = view.getUint32(4, true);
+            
+            document.getElementById('sampleCount').textContent = sampleCount;
+            
+            const width = waveformCanvas.width;
+            const height = waveformCanvas.height;
+            const centerY = height / 2;
+            
+            // Clear canvas
+            waveformCtx.fillStyle = '#000';
+            waveformCtx.fillRect(0, 0, width, height);
+            
+            // Draw grid
+            waveformCtx.strokeStyle = '#1a1a1a';
+            waveformCtx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                const y = (height / 10) * i;
+                waveformCtx.beginPath();
+                waveformCtx.moveTo(0, y);
+                waveformCtx.lineTo(width, y);
+                waveformCtx.stroke();
+            }
+            
+            // Draw center line
+            waveformCtx.strokeStyle = '#333';
+            waveformCtx.lineWidth = 2;
+            waveformCtx.beginPath();
+            waveformCtx.moveTo(0, centerY);
+            waveformCtx.lineTo(width, centerY);
+            waveformCtx.stroke();
+            
+            // Draw I channel (in-phase) - Green
+            waveformCtx.strokeStyle = '#00ff00';
+            waveformCtx.lineWidth = 2;
+            waveformCtx.beginPath();
+            
+            for (let i = 0; i < sampleCount; i++) {
+                const offset = 8 + i * 8; // Skip header (8 bytes)
+                const iValue = view.getFloat32(offset, true);
+                const x = (i / (sampleCount - 1)) * width;
+                const y = centerY - (iValue * centerY * 0.9); // Scale to 90% of half height
+                
+                if (i === 0) {
+                    waveformCtx.moveTo(x, y);
+                } else {
+                    waveformCtx.lineTo(x, y);
+                }
+            }
+            waveformCtx.stroke();
+            
+            // Draw Q channel (quadrature) - Magenta
+            waveformCtx.strokeStyle = '#ff00ff';
+            waveformCtx.lineWidth = 2;
+            waveformCtx.beginPath();
+            
+            for (let i = 0; i < sampleCount; i++) {
+                const offset = 12 + i * 8; // Skip header + I value
+                const qValue = view.getFloat32(offset, true);
+                const x = (i / (sampleCount - 1)) * width;
+                const y = centerY - (qValue * centerY * 0.9);
+                
+                if (i === 0) {
+                    waveformCtx.moveTo(x, y);
+                } else {
+                    waveformCtx.lineTo(x, y);
+                }
+            }
+            waveformCtx.stroke();
+            
+            // Draw labels
+            waveformCtx.fillStyle = '#00aa00';
+            waveformCtx.font = '12px Courier New';
+            waveformCtx.fillText('I', 10, 20);
+            waveformCtx.fillStyle = '#ff00ff';
+            waveformCtx.fillText('Q', 30, 20);
+        }
+        
+        // Auto-connect on page load (optional)
+        // window.onload = connectWaveform;
+    </script>
+</body>
+</html>
