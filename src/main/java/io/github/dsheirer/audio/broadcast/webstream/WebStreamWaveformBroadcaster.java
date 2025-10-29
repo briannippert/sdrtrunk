@@ -32,8 +32,8 @@ import java.util.List;
 public class WebStreamWaveformBroadcaster implements Listener<ComplexSamples>
 {
     private static final Logger mLog = LoggerFactory.getLogger(WebStreamWaveformBroadcaster.class);
-    private static final int DECIMATION_FACTOR = 100; // Send every 100th sample (original conservative setting)
-    private static final int MAX_SAMPLES_PER_PACKET = 512; // Maximum samples per WebSocket packet
+    private static final int DECIMATION_FACTOR = 50; // Send every 50th sample for better horizontal resolution
+    private static final int MAX_SAMPLES_PER_PACKET = 1024; // Increased from 512 to 1024
     
     private List<WaveformWebSocket> mClients = new ArrayList<>();
     private int mSampleCounter = 0;
