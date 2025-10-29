@@ -563,6 +563,8 @@ public class WebUIServlet extends HttpServlet
                     <select id="newChannelType" class="form-select">
                         <option value="NBFM">NBFM - Narrowband FM</option>
                         <option value="AM">AM - Amplitude Modulation</option>
+                        <option value="P25_PHASE1">P25 Phase 1 - APCO Project 25</option>
+                        <option value="P25_PHASE2">P25 Phase 2 - APCO Project 25</option>
                     </select>
                 </div>
                 <div class="form-row">

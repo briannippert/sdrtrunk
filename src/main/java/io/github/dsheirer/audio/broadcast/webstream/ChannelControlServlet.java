@@ -27,6 +27,8 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.am.DecodeConfigAM;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
+import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
+import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -261,8 +263,19 @@ public class ChannelControlServlet extends HttpServlet
                     decodeConfig = new DecodeConfigNBFM();
                     decoderType = DecoderType.NBFM;
                     break;
+                case "P25_PHASE1":
+                case "P25-1":
+                case "P25":
+                    decodeConfig = new DecodeConfigP25Phase1();
+                    decoderType = DecoderType.P25_PHASE1;
+                    break;
+                case "P25_PHASE2":
+                case "P25-2":
+                    decodeConfig = new DecodeConfigP25Phase2();
+                    decoderType = DecoderType.P25_PHASE2;
+                    break;
                 default:
-                    sendError(resp, "Unsupported decoder type: " + type + ". Supported: AM, NBFM/FM");
+                    sendError(resp, "Unsupported decoder type: " + type + ". Supported: AM, NBFM/FM, P25_PHASE1/P25-1/P25, P25_PHASE2/P25-2");
                     return;
             }
             
@@ -344,9 +357,11 @@ public class ChannelControlServlet extends HttpServlet
     {
         List<Map<String, String>> types = new ArrayList<>();
         
-        // Only include simple decoder types suitable for web UI
-        types.add(createTypeInfo("AM", "AM - Amplitude Modulation"));
+        // Include decoder types suitable for web UI
         types.add(createTypeInfo("NBFM", "NBFM - Narrowband FM"));
+        types.add(createTypeInfo("AM", "AM - Amplitude Modulation"));
+        types.add(createTypeInfo("P25_PHASE1", "P25 Phase 1 - APCO Project 25"));
+        types.add(createTypeInfo("P25_PHASE2", "P25 Phase 2 - APCO Project 25"));
         
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
