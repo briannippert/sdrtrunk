@@ -32,7 +32,7 @@ public class WaveformSampleTap implements Listener<INativeBuffer>
     private WebStreamWaveformBroadcaster mBroadcaster;
     private TunerController mTunerController;
     private int mSampleCounter = 0;
-    private static final int SAMPLE_INTERVAL = 10; // Process every 10th buffer (original conservative setting)
+    private static final int SAMPLE_INTERVAL = 3; // Process every 3rd buffer for faster updates
 
     public WaveformSampleTap(WebStreamWaveformBroadcaster broadcaster, TunerController tunerController)
     {
