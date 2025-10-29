@@ -1204,6 +1204,20 @@ public class WebUIServlet extends HttpServlet
                 nextStartTime += audioBuffer.duration;
             }
         }
+        
+        // Auto-load channels and connect when page loads
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('Page loaded - initializing...');
+            
+            // Load channels first
+            loadChannels(null);
+            
+            // Connect to audio and waveform WebSockets
+            setTimeout(() => {
+                connectAudio();
+                connectWaveform();
+            }, 500);
+        });
     </script>
 </body>
 </html>
