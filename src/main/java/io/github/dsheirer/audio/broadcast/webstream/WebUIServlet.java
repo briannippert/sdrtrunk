@@ -354,6 +354,98 @@ public class WebUIServlet extends HttpServlet
             color: #000;
         }
         
+        .add-channel-form {
+            background: rgba(0, 50, 0, 0.3);
+            border: 1px solid #00aa00;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        
+        .add-channel-form.expanded {
+            display: block;
+        }
+        
+        .form-row {
+            margin-bottom: 10px;
+        }
+        
+        .form-label {
+            display: block;
+            color: #00aa00;
+            font-size: 0.8em;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        
+        .form-input, .form-select {
+            width: 100%;
+            padding: 8px;
+            background: #000;
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            box-shadow: 0 0 5px #00ff00;
+        }
+        
+        .form-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .form-btn {
+            flex: 1;
+            padding: 10px;
+            background: #000;
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+        
+        .form-btn:hover {
+            background: #00ff00;
+            color: #000;
+        }
+        
+        .form-btn.cancel {
+            border-color: #ffaa00;
+            color: #ffaa00;
+        }
+        
+        .form-btn.cancel:hover {
+            background: #ffaa00;
+            color: #000;
+        }
+        
+        .delete-btn {
+            background: #000;
+            border: 1px solid #ff3333;
+            color: #ff3333;
+            padding: 5px 15px;
+            font-size: 0.8em;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            margin-left: 5px;
+        }
+        
+        .delete-btn:hover {
+            background: #ff3333;
+            color: #000;
+        }
+        
         .visualizer {
             height: 80px;
             background: #000;
@@ -451,10 +543,42 @@ public class WebUIServlet extends HttpServlet
             <div class="channel-control-header" onclick="toggleChannelList()">
                 <span class="channel-control-title">Channel Control</span>
                 <span>
+                    <button class="refresh-btn" onclick="showAddForm(event)">+ ADD</button>
                     <button class="refresh-btn" onclick="loadChannels(event)">⟳ REFRESH</button>
                     <span class="toggle-icon" id="toggleIcon">▼</span>
                 </span>
             </div>
+            
+            <div class="add-channel-form" id="addChannelForm">
+                <div class="form-row">
+                    <label class="form-label">Channel Name</label>
+                    <input type="text" id="newChannelName" class="form-input" placeholder="e.g., Police Dispatch">
+                </div>
+                <div class="form-row">
+                    <label class="form-label">Frequency (Hz)</label>
+                    <input type="number" id="newChannelFreq" class="form-input" placeholder="e.g., 155760000">
+                </div>
+                <div class="form-row">
+                    <label class="form-label">Decoder Type</label>
+                    <select id="newChannelType" class="form-select">
+                        <option value="NBFM">NBFM - Narrowband FM</option>
+                        <option value="AM">AM - Amplitude Modulation</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label class="form-label">System (Optional)</label>
+                    <input type="text" id="newChannelSystem" class="form-input" placeholder="e.g., County System">
+                </div>
+                <div class="form-row">
+                    <label class="form-label">Site (Optional)</label>
+                    <input type="text" id="newChannelSite" class="form-input" placeholder="e.g., Main Site">
+                </div>
+                <div class="form-buttons">
+                    <button class="form-btn" onclick="createChannel()">CREATE</button>
+                    <button class="form-btn cancel" onclick="hideAddForm()">CANCEL</button>
+                </div>
+            </div>
+            
             <div class="channel-list" id="channelList">
                 <div style="color: #00aa00; text-align: center; padding: 20px;">
                     Click REFRESH to load channels
@@ -536,6 +660,93 @@ public class WebUIServlet extends HttpServlet
             }
         }
         
+        function showAddForm(event) {
+            if (event) event.stopPropagation();
+            document.getElementById('addChannelForm').classList.add('expanded');
+            if (!channelListExpanded) {
+                toggleChannelList();
+            }
+        }
+        
+        function hideAddForm() {
+            document.getElementById('addChannelForm').classList.remove('expanded');
+            // Clear form
+            document.getElementById('newChannelName').value = '';
+            document.getElementById('newChannelFreq').value = '';
+            document.getElementById('newChannelSystem').value = '';
+            document.getElementById('newChannelSite').value = '';
+        }
+        
+        function createChannel() {
+            const name = document.getElementById('newChannelName').value.trim();
+            const frequency = parseInt(document.getElementById('newChannelFreq').value);
+            const type = document.getElementById('newChannelType').value;
+            const system = document.getElementById('newChannelSystem').value.trim();
+            const site = document.getElementById('newChannelSite').value.trim();
+            
+            if (!name) {
+                alert('Channel name is required');
+                return;
+            }
+            
+            if (!frequency || frequency <= 0) {
+                alert('Valid frequency is required');
+                return;
+            }
+            
+            const channelData = {
+                name: name,
+                frequency: frequency,
+                type: type
+            };
+            
+            if (system) channelData.system = system;
+            if (site) channelData.site = site;
+            
+            fetch('/api/channels?action=create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(channelData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    hideAddForm();
+                    loadChannels(null);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('Error creating channel: ' + error.message);
+            });
+        }
+        
+        function deleteChannel(channelName) {
+            if (!confirm('Delete channel "' + channelName + '"?')) {
+                return;
+            }
+            
+            fetch('/api/channels?action=delete&channel=' + encodeURIComponent(channelName), {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log(data.message);
+                    loadChannels(null);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('Error deleting channel: ' + error.message);
+            });
+        }
+        
         function loadChannels(event) {
             if (event) event.stopPropagation();
             
@@ -568,22 +779,45 @@ public class WebUIServlet extends HttpServlet
                 const item = document.createElement('div');
                 item.className = 'channel-item';
                 
-                const name = document.createElement('span');
+                const nameDiv = document.createElement('div');
+                nameDiv.style.flex = '1';
+                
+                const name = document.createElement('div');
                 name.className = 'channel-item-name';
                 name.textContent = channel.name;
+                nameDiv.appendChild(name);
+                
+                // Show frequency if available
+                if (channel.frequency) {
+                    const freq = document.createElement('div');
+                    freq.style.color = '#00aa00';
+                    freq.style.fontSize = '0.75em';
+                    freq.textContent = (channel.frequency / 1000000).toFixed(4) + ' MHz';
+                    nameDiv.appendChild(freq);
+                }
                 
                 const status = document.createElement('span');
                 status.className = 'channel-item-status' + (channel.processing ? ' running' : '');
                 status.textContent = channel.processing ? '● RUNNING' : '○ STOPPED';
+                
+                const btnContainer = document.createElement('span');
                 
                 const btn = document.createElement('button');
                 btn.className = 'channel-item-btn';
                 btn.textContent = channel.processing ? 'STOP' : 'START';
                 btn.onclick = () => toggleChannel(channel.name, channel.processing);
                 
-                item.appendChild(name);
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-btn';
+                delBtn.textContent = 'DELETE';
+                delBtn.onclick = () => deleteChannel(channel.name);
+                
+                btnContainer.appendChild(btn);
+                btnContainer.appendChild(delBtn);
+                
+                item.appendChild(nameDiv);
                 item.appendChild(status);
-                item.appendChild(btn);
+                item.appendChild(btnContainer);
                 list.appendChild(item);
             });
         }
