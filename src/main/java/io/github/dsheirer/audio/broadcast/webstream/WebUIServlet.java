@@ -1169,8 +1169,8 @@ public class WebUIServlet extends HttpServlet
             }
             if (maxMag === 0) maxMag = 1; // Prevent division by zero
             
-            // Define the waterfall display area (excluding bottom 20px for labels)
-            const waterfallHeight = height - 20;
+            // Define the waterfall display area (excluding bottom 30px for labels)
+            const waterfallHeight = height - 30;
             
             // Scroll the waterfall down by copying current content (excluding label area)
             const imageData = waveformCtx.getImageData(0, 0, width, waterfallHeight - 1);
@@ -1201,10 +1201,10 @@ public class WebUIServlet extends HttpServlet
                 
                 // Clear the bottom label area first (prevent scrolling artifacts)
                 waveformCtx.fillStyle = '#000';
-                waveformCtx.fillRect(0, height - 20, width, 20);
+                waveformCtx.fillRect(0, height - 30, width, 30);
                 
                 waveformCtx.fillStyle = '#00ff00';
-                waveformCtx.font = 'bold 11px Courier New';
+                waveformCtx.font = 'bold 16px Courier New';
                 
                 // Format frequency in MHz with better precision
                 const formatFreq = (freq) => {
@@ -1225,10 +1225,10 @@ public class WebUIServlet extends HttpServlet
                     
                     // Draw tick mark
                     waveformCtx.strokeStyle = '#00aa00';
-                    waveformCtx.lineWidth = 1;
+                    waveformCtx.lineWidth = 2;
                     waveformCtx.beginPath();
-                    waveformCtx.moveTo(x, height - 20);
-                    waveformCtx.lineTo(x, height - 15);
+                    waveformCtx.moveTo(x, height - 30);
+                    waveformCtx.lineTo(x, height - 24);
                     waveformCtx.stroke();
                     
                     // Draw frequency label
@@ -1243,31 +1243,31 @@ public class WebUIServlet extends HttpServlet
                     // Highlight center frequency
                     if (i === 2) {
                         waveformCtx.fillStyle = '#ffff00';
-                        waveformCtx.font = 'bold 12px Courier New';
+                        waveformCtx.font = 'bold 18px Courier New';
                     } else {
                         waveformCtx.fillStyle = '#00ff00';
-                        waveformCtx.font = 'bold 11px Courier New';
+                        waveformCtx.font = 'bold 16px Courier New';
                     }
                     
-                    waveformCtx.fillText(label, xPos, height - 5);
+                    waveformCtx.fillText(label, xPos, height - 8);
                 }
                 
                 // Time label - draw in top-left corner (outside scroll area)
                 waveformCtx.fillStyle = '#000';
-                waveformCtx.fillRect(0, 0, 80, 16);
+                waveformCtx.fillRect(0, 0, 100, 22);
                 waveformCtx.fillStyle = '#00ff00';
-                waveformCtx.font = 'bold 11px Courier New';
-                waveformCtx.fillText('Time ↓', 5, 12);
+                waveformCtx.font = 'bold 16px Courier New';
+                waveformCtx.fillText('Time ↓', 5, 16);
             } else {
                 // Fallback if no frequency info
                 waveformCtx.fillStyle = '#000';
-                waveformCtx.fillRect(0, height - 20, width, 20);
-                waveformCtx.fillRect(0, 0, 100, 16);
+                waveformCtx.fillRect(0, height - 30, width, 30);
+                waveformCtx.fillRect(0, 0, 100, 22);
                 
                 waveformCtx.fillStyle = '#00aa00';
-                waveformCtx.font = 'bold 11px Courier New';
-                waveformCtx.fillText('Frequency →', width - 120, height - 5);
-                waveformCtx.fillText('Time ↓', 5, 12);
+                waveformCtx.font = 'bold 16px Courier New';
+                waveformCtx.fillText('Frequency →', width - 140, height - 8);
+                waveformCtx.fillText('Time ↓', 5, 16);
             }
         }
         
