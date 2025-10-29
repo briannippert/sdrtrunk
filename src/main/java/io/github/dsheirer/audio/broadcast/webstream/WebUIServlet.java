@@ -710,7 +710,7 @@ public class WebUIServlet extends HttpServlet
         <div class="dashboard-grid">
             <div class="waveform-container dashboard-main">
                 <div class="waveform-header">
-                    <div class="waveform-label">🌊 IQ WAVEFORM</div>
+                    <div class="waveform-label">📊 SPECTRUM WATERFALL</div>
                     <div class="waveform-status">
                         <div class="waveform-stat">
                             <span class="waveform-stat-label">Samples:</span>
@@ -759,11 +759,83 @@ public class WebUIServlet extends HttpServlet
         let currentChannelName = '---';
         let channelListExpanded = false;
         
-        // Waveform visualization
+        // Waveform visualization - Waterfall/Spectrogram
         const waveformCanvas = document.getElementById('waveformCanvas');
         const waveformCtx = waveformCanvas.getContext('2d');
         let waveformUpdateCount = 0;
         let waveformLastUpdateTime = Date.now();
+        
+        // Waterfall display buffer
+        let waterfallBuffer = null;
+        const waterfallHeight = waveformCanvas.height;
+        
+        // FFT function using basic DFT (simple implementation)
+        function computeFFT(iSamples, qSamples) {
+            const N = iSamples.length;
+            if (N === 0) return [];
+            
+            const fftSize = Math.min(N, 512); // Use up to 512 samples for FFT
+            const numBins = Math.floor(fftSize / 2);
+            if (numBins <= 0) return [];
+            
+            const magnitudes = new Array(numBins);
+            
+            for (let k = 0; k < numBins; k++) {
+                let realSum = 0;
+                let imagSum = 0;
+                
+                for (let n = 0; n < fftSize; n++) {
+                    const angle = -2 * Math.PI * k * n / fftSize;
+                    const cos = Math.cos(angle);
+                    const sin = Math.sin(angle);
+                    
+                    // Complex multiplication: (I + jQ) * (cos + j*sin)
+                    realSum += iSamples[n] * cos - qSamples[n] * sin;
+                    imagSum += iSamples[n] * sin + qSamples[n] * cos;
+                }
+                
+                // Magnitude
+                magnitudes[k] = Math.sqrt(realSum * realSum + imagSum * imagSum) / fftSize;
+            }
+            
+            return magnitudes;
+        }
+        
+        // Convert magnitude to color (blue -> green -> yellow -> red)
+        function magnitudeToColor(magnitude, maxMag) {
+            const normalized = Math.min(magnitude / maxMag, 1.0);
+            const intensity = Math.pow(normalized, 0.5); // Gamma correction
+            
+            let r, g, b;
+            
+            if (intensity < 0.25) {
+                // Black to Blue
+                const t = intensity / 0.25;
+                r = 0;
+                g = 0;
+                b = Math.floor(t * 255);
+            } else if (intensity < 0.5) {
+                // Blue to Cyan
+                const t = (intensity - 0.25) / 0.25;
+                r = 0;
+                g = Math.floor(t * 255);
+                b = 255;
+            } else if (intensity < 0.75) {
+                // Cyan to Yellow
+                const t = (intensity - 0.5) / 0.25;
+                r = Math.floor(t * 255);
+                g = 255;
+                b = Math.floor((1 - t) * 255);
+            } else {
+                // Yellow to Red
+                const t = (intensity - 0.75) / 0.25;
+                r = 255;
+                g = Math.floor((1 - t) * 255);
+                b = 0;
+            }
+            
+            return `rgb(${r},${g},${b})`;
+        }
         
         function toggleChannelList() {
             channelListExpanded = !channelListExpanded;
@@ -1061,77 +1133,111 @@ public class WebUIServlet extends HttpServlet
             const view = new DataView(data);
             const sampleCount = view.getInt32(0, true);
             const timestamp = view.getUint32(4, true);
+            const centerFrequency = Number(view.getBigInt64(8, true)); // Hz
+            const sampleRate = view.getFloat32(16, true); // Hz
             
             document.getElementById('waveformSamples').textContent = sampleCount;
             
-            const width = waveformCanvas.width;
-            const height = waveformCanvas.height;
-            const centerY = height / 2;
-            
-            // Clear canvas
-            waveformCtx.fillStyle = '#000';
-            waveformCtx.fillRect(0, 0, width, height);
-            
-            // Draw grid lines
-            waveformCtx.strokeStyle = '#0a0a0a';
-            waveformCtx.lineWidth = 1;
-            for (let i = 0; i <= 4; i++) {
-                const y = (height / 4) * i;
-                waveformCtx.beginPath();
-                waveformCtx.moveTo(0, y);
-                waveformCtx.lineTo(width, y);
-                waveformCtx.stroke();
-            }
-            
-            // Draw center line
-            waveformCtx.strokeStyle = '#1a1a1a';
-            waveformCtx.lineWidth = 1;
-            waveformCtx.beginPath();
-            waveformCtx.moveTo(0, centerY);
-            waveformCtx.lineTo(width, centerY);
-            waveformCtx.stroke();
-            
             if (sampleCount === 0) return;
             
-            // Draw I channel (in-phase) - Green
-            waveformCtx.strokeStyle = '#00ff00';
-            waveformCtx.lineWidth = 1.5;
-            waveformCtx.beginPath();
+            const width = waveformCanvas.width;
+            const height = waveformCanvas.height;
+            
+            // Extract I and Q samples (now starting at offset 20 due to extended header)
+            const iSamples = new Float32Array(sampleCount);
+            const qSamples = new Float32Array(sampleCount);
             
             for (let i = 0; i < sampleCount; i++) {
-                const offset = 8 + i * 8;
-                const iValue = view.getFloat32(offset, true);
-                const x = (i / (sampleCount - 1)) * width;
-                const y = centerY - (iValue * centerY * 0.85);
-                
-                if (i === 0) {
-                    waveformCtx.moveTo(x, y);
-                } else {
-                    waveformCtx.lineTo(x, y);
-                }
+                const offset = 20 + i * 8;
+                iSamples[i] = view.getFloat32(offset, true);
+                qSamples[i] = view.getFloat32(offset + 4, true);
             }
-            waveformCtx.stroke();
             
-            // Draw Q channel (quadrature) - Magenta
-            waveformCtx.strokeStyle = '#ff00ff';
-            waveformCtx.lineWidth = 1.5;
-            waveformCtx.globalAlpha = 0.7;
-            waveformCtx.beginPath();
+            // Compute FFT to get frequency spectrum
+            const magnitudes = computeFFT(iSamples, qSamples);
+            const numBins = magnitudes.length;
             
-            for (let i = 0; i < sampleCount; i++) {
-                const offset = 12 + i * 8;
-                const qValue = view.getFloat32(offset, true);
-                const x = (i / (sampleCount - 1)) * width;
-                const y = centerY - (qValue * centerY * 0.85);
-                
-                if (i === 0) {
-                    waveformCtx.moveTo(x, y);
-                } else {
-                    waveformCtx.lineTo(x, y);
-                }
+            if (numBins === 0) {
+                console.warn('FFT returned no bins - skipping frame');
+                return;
             }
-            waveformCtx.stroke();
-            waveformCtx.globalAlpha = 1.0;
+            
+            // Find max magnitude for normalization
+            let maxMag = 0;
+            for (let i = 0; i < numBins; i++) {
+                if (magnitudes[i] > maxMag) maxMag = magnitudes[i];
+            }
+            if (maxMag === 0) maxMag = 1; // Prevent division by zero
+            
+            // Define the waterfall display area (excluding bottom 15px for labels)
+            const waterfallHeight = height - 15;
+            
+            // Scroll the waterfall down by copying current content (excluding label area)
+            const imageData = waveformCtx.getImageData(0, 0, width, waterfallHeight - 1);
+            waveformCtx.putImageData(imageData, 0, 1);
+            
+            // Clear the top line
+            waveformCtx.fillStyle = '#000';
+            waveformCtx.fillRect(0, 0, width, 1);
+            
+            // Draw new spectrum line at the top
+            for (let x = 0; x < width; x++) {
+                // Map x position to frequency bin
+                const binIndex = Math.floor((x / width) * numBins);
+                const magnitude = magnitudes[binIndex];
+                
+                // Convert magnitude to color
+                const color = magnitudeToColor(magnitude, maxMag);
+                
+                // Draw pixel at top of canvas
+                waveformCtx.fillStyle = color;
+                waveformCtx.fillRect(x, 0, 1, 1);
+            }
+            
+            // Draw frequency axis labels
+            if (centerFrequency > 0 && sampleRate > 0) {
+                const startFreq = centerFrequency - (sampleRate / 2);
+                const endFreq = centerFrequency + (sampleRate / 2);
+                
+                // Clear the bottom label area first (prevent scrolling artifacts)
+                waveformCtx.fillStyle = '#000';
+                waveformCtx.fillRect(0, height - 15, width, 15);
+                
+                waveformCtx.fillStyle = '#00ff00';
+                waveformCtx.font = '10px Courier New';
+                
+                // Format frequency in MHz
+                const formatFreq = (freq) => (freq / 1e6).toFixed(3) + ' MHz';
+                
+                // Left edge frequency
+                waveformCtx.fillText(formatFreq(startFreq), 5, height - 4);
+                
+                // Center frequency
+                const centerText = formatFreq(centerFrequency);
+                const centerWidth = waveformCtx.measureText(centerText).width;
+                waveformCtx.fillText(centerText, (width - centerWidth) / 2, height - 4);
+                
+                // Right edge frequency
+                const rightText = formatFreq(endFreq);
+                const rightWidth = waveformCtx.measureText(rightText).width;
+                waveformCtx.fillText(rightText, width - rightWidth - 5, height - 4);
+                
+                // Time label - draw in top-left corner (outside scroll area)
+                waveformCtx.fillStyle = '#000';
+                waveformCtx.fillRect(0, 0, 60, 14);
+                waveformCtx.fillStyle = '#00ff00';
+                waveformCtx.fillText('Time ↓', 5, 12);
+            } else {
+                // Fallback if no frequency info
+                waveformCtx.fillStyle = '#000';
+                waveformCtx.fillRect(0, height - 15, width, 15);
+                waveformCtx.fillRect(0, 0, 100, 14);
+                
+                waveformCtx.fillStyle = '#00aa00';
+                waveformCtx.font = '10px Courier New';
+                waveformCtx.fillText('Frequency →', width - 100, height - 4);
+                waveformCtx.fillText('Time ↓', 5, 12);
+            }
         }
         
         function play() {
@@ -1204,19 +1310,6 @@ public class WebUIServlet extends HttpServlet
                 nextStartTime += audioBuffer.duration;
             }
         }
-        
-        // Auto-load channels and connect when page loads
-        window.addEventListener('DOMContentLoaded', function() {
-            console.log('Page loaded - initializing...');
-            
-            // Load channels first
-            loadChannels(null);
-            
-            // Connect to audio and waveform WebSockets
-            setTimeout(() => {
-                connect();
-            }, 500);
-        });
     </script>
 </body>
 </html>

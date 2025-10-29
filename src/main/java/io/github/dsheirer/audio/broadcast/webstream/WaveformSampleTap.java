@@ -22,6 +22,7 @@ package io.github.dsheirer.audio.broadcast.webstream;
 import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
+import io.github.dsheirer.source.tuner.TunerController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,12 +30,14 @@ public class WaveformSampleTap implements Listener<INativeBuffer>
 {
     private static final Logger mLog = LoggerFactory.getLogger(WaveformSampleTap.class);
     private WebStreamWaveformBroadcaster mBroadcaster;
+    private TunerController mTunerController;
     private int mSampleCounter = 0;
-    private static final int SAMPLE_INTERVAL = 10; // Process every 10th buffer to reduce load
+    private static final int SAMPLE_INTERVAL = 10; // Process every 10th buffer (original conservative setting)
 
-    public WaveformSampleTap(WebStreamWaveformBroadcaster broadcaster)
+    public WaveformSampleTap(WebStreamWaveformBroadcaster broadcaster, TunerController tunerController)
     {
         mBroadcaster = broadcaster;
+        mTunerController = tunerController;
     }
 
     @Override
@@ -60,9 +63,11 @@ public class WaveformSampleTap implements Listener<INativeBuffer>
             if(iterator.hasNext())
             {
                 ComplexSamples samples = iterator.next();
-                if(samples != null)
+                if(samples != null && mTunerController != null)
                 {
-                    mBroadcaster.receive(samples);
+                    long centerFreq = mTunerController.getFrequency();
+                    double sampleRate = mTunerController.getSampleRate();
+                    mBroadcaster.receive(samples, centerFreq, sampleRate);
                 }
             }
         }

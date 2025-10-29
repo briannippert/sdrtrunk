@@ -32,7 +32,7 @@ import java.util.List;
 public class WebStreamWaveformBroadcaster implements Listener<ComplexSamples>
 {
     private static final Logger mLog = LoggerFactory.getLogger(WebStreamWaveformBroadcaster.class);
-    private static final int DECIMATION_FACTOR = 100; // Send every Nth sample to reduce bandwidth
+    private static final int DECIMATION_FACTOR = 100; // Send every 100th sample (original conservative setting)
     private static final int MAX_SAMPLES_PER_PACKET = 512; // Maximum samples per WebSocket packet
     
     private List<WaveformWebSocket> mClients = new ArrayList<>();
@@ -61,6 +61,11 @@ public class WebStreamWaveformBroadcaster implements Listener<ComplexSamples>
     @Override
     public void receive(ComplexSamples samples)
     {
+        receive(samples, 0, 0);
+    }
+    
+    public void receive(ComplexSamples samples, long centerFrequency, double sampleRate)
+    {
         if(samples == null || getClientCount() == 0)
         {
             return;
@@ -79,14 +84,16 @@ public class WebStreamWaveformBroadcaster implements Listener<ComplexSamples>
                 return;
             }
 
-            // Create byte buffer: 4 bytes per float * 2 (I and Q) * number of samples
-            // Plus 8 bytes for header (4 bytes sample count + 4 bytes sample rate)
-            ByteBuffer buffer = ByteBuffer.allocate(8 + decimatedSamples * 8);
+            // Create byte buffer with extended header for frequency info
+            // Header: 4 bytes sample count + 4 bytes timestamp + 8 bytes center freq + 4 bytes sample rate
+            ByteBuffer buffer = ByteBuffer.allocate(20 + decimatedSamples * 8);
             buffer.order(ByteOrder.LITTLE_ENDIAN);
             
-            // Header: number of samples (int32) and timestamp (int32, lower 32 bits)
+            // Header
             buffer.putInt(decimatedSamples);
             buffer.putInt((int)(samples.timestamp() & 0xFFFFFFFF));
+            buffer.putLong(centerFrequency); // Center frequency in Hz
+            buffer.putFloat((float)sampleRate); // Sample rate in Hz
             
             // Write decimated I/Q samples as 32-bit floats
             for(int i = 0; i < decimatedSamples; i++)
@@ -101,6 +108,11 @@ public class WebStreamWaveformBroadcaster implements Listener<ComplexSamples>
             
             byte[] data = buffer.array();
             broadcastToClients(data);
+            
+            if(mLog.isDebugEnabled() && System.currentTimeMillis() % 5000 < 100)
+            {
+                mLog.debug("Broadcasting waveform packet with {} samples to {} clients", decimatedSamples, getClientCount());
+            }
         }
         catch(Exception e)
         {

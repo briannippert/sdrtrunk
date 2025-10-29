@@ -119,13 +119,24 @@ public class WebStreamServer implements Listener<AudioSegment>
     {
         if(mTunerManager != null)
         {
+            int attached = 0;
             for(DiscoveredTuner discoveredTuner : mTunerManager.getAvailableTuners())
             {
                 if(discoveredTuner.hasTuner())
                 {
                     attachWaveformTapToTuner(discoveredTuner.getTuner());
+                    attached++;
                 }
             }
+            mLog.info("Attached waveform taps to {} tuner(s)", attached);
+            if(attached == 0)
+            {
+                mLog.warn("No tuners available for waveform streaming - taps will attach when tuners are enabled");
+            }
+        }
+        else
+        {
+            mLog.warn("TunerManager is null - cannot attach waveform taps");
         }
     }
     
@@ -136,10 +147,14 @@ public class WebStreamServer implements Listener<AudioSegment>
             TunerController controller = tuner.getTunerController();
             if(controller != null)
             {
-                WaveformSampleTap tap = new WaveformSampleTap(mWaveformBroadcaster);
+                WaveformSampleTap tap = new WaveformSampleTap(mWaveformBroadcaster, controller);
                 controller.addBufferListener(tap);
                 mWaveformTaps.put(tuner.getUniqueID(), tap);
-                mLog.info("Attached waveform tap to tuner: " + tuner.getPreferredName());
+                mLog.info("Attached waveform tap to tuner: {} - streaming will start automatically", tuner.getPreferredName());
+            }
+            else
+            {
+                mLog.warn("Cannot attach waveform tap - tuner controller is null for: {}", tuner.getPreferredName());
             }
         }
     }
