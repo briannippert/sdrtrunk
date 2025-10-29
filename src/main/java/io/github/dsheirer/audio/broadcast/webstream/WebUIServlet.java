@@ -722,7 +722,7 @@ public class WebUIServlet extends HttpServlet
                         </div>
                     </div>
                 </div>
-                <canvas id="waveformCanvas" width="1400" height="200"></canvas>
+                <canvas id="waveformCanvas" width="1800" height="300"></canvas>
             </div>
             
             <div class="info dashboard-side">
@@ -774,7 +774,7 @@ public class WebUIServlet extends HttpServlet
             const N = iSamples.length;
             if (N === 0) return [];
             
-            const fftSize = Math.min(N, 512); // Use up to 512 samples for FFT
+            const fftSize = Math.min(N, 1024); // Increased from 512 to 1024 for better resolution
             const numBins = Math.floor(fftSize / 2);
             if (numBins <= 0) return [];
             
@@ -1169,8 +1169,8 @@ public class WebUIServlet extends HttpServlet
             }
             if (maxMag === 0) maxMag = 1; // Prevent division by zero
             
-            // Define the waterfall display area (excluding bottom 15px for labels)
-            const waterfallHeight = height - 15;
+            // Define the waterfall display area (excluding bottom 20px for labels)
+            const waterfallHeight = height - 20;
             
             // Scroll the waterfall down by copying current content (excluding label area)
             const imageData = waveformCtx.getImageData(0, 0, width, waterfallHeight - 1);
@@ -1201,41 +1201,72 @@ public class WebUIServlet extends HttpServlet
                 
                 // Clear the bottom label area first (prevent scrolling artifacts)
                 waveformCtx.fillStyle = '#000';
-                waveformCtx.fillRect(0, height - 15, width, 15);
+                waveformCtx.fillRect(0, height - 20, width, 20);
                 
                 waveformCtx.fillStyle = '#00ff00';
-                waveformCtx.font = '10px Courier New';
+                waveformCtx.font = 'bold 11px Courier New';
                 
-                // Format frequency in MHz
-                const formatFreq = (freq) => (freq / 1e6).toFixed(3) + ' MHz';
+                // Format frequency in MHz with better precision
+                const formatFreq = (freq) => {
+                    const mhz = freq / 1e6;
+                    if (mhz >= 100) {
+                        return mhz.toFixed(4) + ' MHz';
+                    } else {
+                        return mhz.toFixed(5) + ' MHz';
+                    }
+                };
                 
-                // Left edge frequency
-                waveformCtx.fillText(formatFreq(startFreq), 5, height - 4);
-                
-                // Center frequency
-                const centerText = formatFreq(centerFrequency);
-                const centerWidth = waveformCtx.measureText(centerText).width;
-                waveformCtx.fillText(centerText, (width - centerWidth) / 2, height - 4);
-                
-                // Right edge frequency
-                const rightText = formatFreq(endFreq);
-                const rightWidth = waveformCtx.measureText(rightText).width;
-                waveformCtx.fillText(rightText, width - rightWidth - 5, height - 4);
+                // Draw grid markers with frequency labels
+                const numMarkers = 5; // Left, quarter, center, three-quarter, right
+                for (let i = 0; i < numMarkers; i++) {
+                    const fraction = i / (numMarkers - 1);
+                    const freq = startFreq + (sampleRate * fraction);
+                    const x = width * fraction;
+                    
+                    // Draw tick mark
+                    waveformCtx.strokeStyle = '#00aa00';
+                    waveformCtx.lineWidth = 1;
+                    waveformCtx.beginPath();
+                    waveformCtx.moveTo(x, height - 20);
+                    waveformCtx.lineTo(x, height - 15);
+                    waveformCtx.stroke();
+                    
+                    // Draw frequency label
+                    const label = formatFreq(freq);
+                    const textWidth = waveformCtx.measureText(label).width;
+                    let xPos = x - textWidth / 2;
+                    
+                    // Adjust edge labels
+                    if (i === 0) xPos = 5;
+                    if (i === numMarkers - 1) xPos = width - textWidth - 5;
+                    
+                    // Highlight center frequency
+                    if (i === 2) {
+                        waveformCtx.fillStyle = '#ffff00';
+                        waveformCtx.font = 'bold 12px Courier New';
+                    } else {
+                        waveformCtx.fillStyle = '#00ff00';
+                        waveformCtx.font = 'bold 11px Courier New';
+                    }
+                    
+                    waveformCtx.fillText(label, xPos, height - 5);
+                }
                 
                 // Time label - draw in top-left corner (outside scroll area)
                 waveformCtx.fillStyle = '#000';
-                waveformCtx.fillRect(0, 0, 60, 14);
+                waveformCtx.fillRect(0, 0, 80, 16);
                 waveformCtx.fillStyle = '#00ff00';
+                waveformCtx.font = 'bold 11px Courier New';
                 waveformCtx.fillText('Time ↓', 5, 12);
             } else {
                 // Fallback if no frequency info
                 waveformCtx.fillStyle = '#000';
-                waveformCtx.fillRect(0, height - 15, width, 15);
-                waveformCtx.fillRect(0, 0, 100, 14);
+                waveformCtx.fillRect(0, height - 20, width, 20);
+                waveformCtx.fillRect(0, 0, 100, 16);
                 
                 waveformCtx.fillStyle = '#00aa00';
-                waveformCtx.font = '10px Courier New';
-                waveformCtx.fillText('Frequency →', width - 100, height - 4);
+                waveformCtx.font = 'bold 11px Courier New';
+                waveformCtx.fillText('Frequency →', width - 120, height - 5);
                 waveformCtx.fillText('Time ↓', 5, 12);
             }
         }
