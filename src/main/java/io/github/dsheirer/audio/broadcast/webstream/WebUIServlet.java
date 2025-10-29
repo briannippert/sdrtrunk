@@ -555,8 +555,8 @@ public class WebUIServlet extends HttpServlet
                     <input type="text" id="newChannelName" class="form-input" placeholder="e.g., Police Dispatch">
                 </div>
                 <div class="form-row">
-                    <label class="form-label">Frequency (Hz)</label>
-                    <input type="number" id="newChannelFreq" class="form-input" placeholder="e.g., 155760000">
+                    <label class="form-label">Frequency (MHz)</label>
+                    <input type="number" id="newChannelFreq" class="form-input" placeholder="e.g., 155.8875" step="0.000001" min="0">
                 </div>
                 <div class="form-row">
                     <label class="form-label">Decoder Type</label>
@@ -681,7 +681,7 @@ public class WebUIServlet extends HttpServlet
         
         function createChannel() {
             const name = document.getElementById('newChannelName').value.trim();
-            const frequency = parseInt(document.getElementById('newChannelFreq').value);
+            const frequencyMHz = parseFloat(document.getElementById('newChannelFreq').value);
             const type = document.getElementById('newChannelType').value;
             const system = document.getElementById('newChannelSystem').value.trim();
             const site = document.getElementById('newChannelSite').value.trim();
@@ -691,10 +691,13 @@ public class WebUIServlet extends HttpServlet
                 return;
             }
             
-            if (!frequency || frequency <= 0) {
-                alert('Valid frequency is required');
+            if (!frequencyMHz || frequencyMHz <= 0) {
+                alert('Valid frequency is required (in MHz, e.g., 155.8875)');
                 return;
             }
+            
+            // Convert MHz to Hz
+            const frequency = Math.round(frequencyMHz * 1000000);
             
             const channelData = {
                 name: name,
