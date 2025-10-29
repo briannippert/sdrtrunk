@@ -46,6 +46,7 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
     private int mAudioSampleCount = 0;
     private boolean mRecordAudioOverride;
     private int mTimeslot;
+    private String mChannelName;
 
     /**
      * Constructs an abstract audio module
@@ -68,6 +69,14 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
     public AbstractAudioModule(AliasList aliasList)
     {
         this(aliasList, DEFAULT_TIMESLOT, DEFAULT_SEGMENT_AUDIO_SAMPLE_LENGTH);
+    }
+
+    /**
+     * Sets the channel name for audio segments produced by this module
+     */
+    public void setChannelName(String channelName)
+    {
+        mChannelName = channelName;
     }
 
     /**
@@ -112,6 +121,7 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
             if(mAudioSegment == null)
             {
                 mAudioSegment = new AudioSegment(mAliasList, getTimeslot());
+                mAudioSegment.setChannelName(mChannelName);
                 mAudioSegment.incrementConsumerCount();
                 mAudioSegment.addIdentifiers(mIdentifierCollection.getIdentifiers());
                 mIdentifierUpdateNotificationBroadcaster.addListener(mAudioSegment);

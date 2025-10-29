@@ -25,6 +25,7 @@ import io.github.dsheirer.audio.DuplicateCallDetector;
 import io.github.dsheirer.audio.broadcast.AudioStreamingManager;
 import io.github.dsheirer.audio.broadcast.BroadcastFormat;
 import io.github.dsheirer.audio.broadcast.BroadcastStatusPanel;
+import io.github.dsheirer.audio.broadcast.webstream.WebStreamServer;
 import io.github.dsheirer.audio.playback.AudioPlaybackManager;
 import io.github.dsheirer.controller.ControllerPanel;
 import io.github.dsheirer.controller.channel.Channel;
@@ -125,6 +126,7 @@ public class SDRTrunk implements Listener<TunerEvent>
     private boolean mNowPlayingDetailsVisible;
     private AudioRecordingManager mAudioRecordingManager;
     private AudioStreamingManager mAudioStreamingManager;
+    private WebStreamServer mWebStreamServer;
     private BroadcastStatusPanel mBroadcastStatusPanel;
     private ControllerPanel mControllerPanel;
     private DiagnosticMonitor mDiagnosticMonitor;
@@ -224,12 +226,23 @@ public class SDRTrunk implements Listener<TunerEvent>
             mUserPreferences);
         mAudioStreamingManager.start();
 
+        mWebStreamServer = new WebStreamServer(8080);
+        try
+        {
+            mWebStreamServer.start();
+        }
+        catch(Exception e)
+        {
+            mLog.error("Failed to start web stream server", e);
+        }
+
         DuplicateCallDetector duplicateCallDetector = new DuplicateCallDetector(mUserPreferences);
 
         mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(duplicateCallDetector);
         mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(audioPlaybackManager);
         mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(mAudioRecordingManager);
         mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(mAudioStreamingManager);
+        mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(mWebStreamServer);
 
         MapService mapService = new MapService(aliasModel, mIconModel);
         mPlaylistManager.getChannelProcessingManager().addDecodeEventListener(mapService);
@@ -650,6 +663,19 @@ public class SDRTrunk implements Listener<TunerEvent>
         mPlaylistManager.getChannelProcessingManager().shutdown();
         mAudioRecordingManager.stop();
         mResourceMonitor.stop();
+
+        if(mWebStreamServer != null && mWebStreamServer.isRunning())
+        {
+            try
+            {
+                mLog.info("Stopping web stream server ...");
+                mWebStreamServer.stop();
+            }
+            catch(Exception e)
+            {
+                mLog.error("Error stopping web stream server", e);
+            }
+        }
 
         mLog.info("Stopping spectral display ...");
         mSpectralPanel.clearTuner();

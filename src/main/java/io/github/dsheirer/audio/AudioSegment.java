@@ -83,6 +83,7 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     private boolean mDisposing = false;
     private AudioSegment mLinkedAudioSegment;
     private int mTimeslot;
+    private String mChannelName;
 
     /**
      * Constructs an instance
@@ -94,6 +95,22 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
         mAliasList = aliasList;
         mTimeslot = timeslot;
         mIdentifierCollection.setTimeslot(timeslot);
+    }
+
+    /**
+     * Sets the channel name for this audio segment
+     */
+    public void setChannelName(String channelName)
+    {
+        mChannelName = channelName;
+    }
+
+    /**
+     * Gets the channel name for this audio segment
+     */
+    public String getChannelName()
+    {
+        return mChannelName;
     }
 
     /**

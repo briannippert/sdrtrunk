@@ -1,0 +1,95 @@
+================================================================================
+SDRTrunk Web Audio Streaming - Files Changed
+================================================================================
+
+NEW FILES CREATED:
+------------------
+1. src/main/java/io/github/dsheirer/audio/broadcast/webstream/WebStreamServer.java
+   - Main web server implementation using Jetty
+   - Manages HTTP server and WebSocket endpoints
+   - Implements Listener<AudioSegment> interface
+
+2. src/main/java/io/github/dsheirer/audio/broadcast/webstream/WebStreamAudioBroadcaster.java
+   - Manages WebSocket client connections
+   - Broadcasts audio to all connected clients
+   - Converts float32 to int16 PCM audio format
+
+3. src/main/java/io/github/dsheirer/audio/broadcast/webstream/AudioWebSocket.java
+   - WebSocket connection handler
+   - Sends binary audio data to browser clients
+   - Manages connection lifecycle
+
+4. src/main/java/io/github/dsheirer/audio/broadcast/webstream/WebUIServlet.java
+   - Serves HTML/CSS/JavaScript web UI
+   - Embedded single-page application
+   - Modern responsive design with audio visualizer
+
+5. WEB_STREAMING.md
+   - User documentation for web streaming feature
+   - Technical details and troubleshooting guide
+
+6. IMPLEMENTATION_SUMMARY.md
+   - Developer documentation
+   - Implementation details and architecture
+
+7. CHANGES.txt
+   - This file - summary of all changes
+
+MODIFIED FILES:
+---------------
+1. build.gradle
+   - Added Jetty web server dependencies (lines after pl.edu.icm:JLargeArrays)
+   - Added Jakarta Servlet API dependency
+
+2. src/main/java/io/github/dsheirer/gui/SDRTrunk.java
+   Changes:
+   - Line ~27: Added import for WebStreamServer
+   - Line ~129: Added field: private WebStreamServer mWebStreamServer
+   - Line ~229-237: Added web server initialization code
+   - Line ~245: Added web server as audio segment listener
+   - Line ~667-680: Added web server shutdown code
+
+DEPENDENCIES ADDED:
+-------------------
+- org.eclipse.jetty:jetty-server:11.0.24
+- org.eclipse.jetty:jetty-servlet:11.0.24
+- org.eclipse.jetty.websocket:websocket-jetty-server:11.0.24
+- org.eclipse.jetty.websocket:websocket-jetty-api:11.0.24
+- jakarta.servlet:jakarta.servlet-api:5.0.0
+
+CONFIGURATION:
+--------------
+- Web server port: 8080 (hardcoded)
+- WebSocket endpoint: ws://localhost:8080/audio
+- Web UI URL: http://localhost:8080
+
+BUILD STATUS:
+-------------
+✓ Compilation successful
+✓ Build successful (tested with: ./gradlew build -x test)
+✓ No compilation errors or warnings
+
+RUNTIME BEHAVIOR:
+-----------------
+- Web server starts automatically when SDRTrunk launches
+- Logs startup message with port and URL
+- Stops gracefully on application shutdown
+- Audio segments automatically forwarded to connected web clients
+
+REQUIREMENTS:
+-------------
+- Java 24 (as per project requirements)
+- Modern web browser with WebSocket and Web Audio API support
+- No additional configuration needed
+
+TESTING NOTES:
+--------------
+To test:
+1. Build: ./gradlew build -x test
+2. Run: ./gradlew run
+3. Open browser: http://localhost:8080
+4. Click Connect, then Play
+
+================================================================================
+End of Changes
+================================================================================

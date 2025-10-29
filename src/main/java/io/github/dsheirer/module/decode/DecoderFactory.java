@@ -134,7 +134,25 @@ public class DecoderFactory
         List<Module> modules = getPrimaryModules(channelMapModel, channel, aliasModel, userPreferences,
                 trafficChannelManager, channelDescriptor);
         modules.addAll(getAuxiliaryDecoders(channel.getAuxDecodeConfiguration()));
+        
+        // Set channel name on all audio modules
+        setChannelNameOnAudioModules(modules, channel.getName());
+        
         return modules;
+    }
+
+    /**
+     * Sets the channel name on all AbstractAudioModule instances in the module list
+     */
+    private static void setChannelNameOnAudioModules(List<Module> modules, String channelName)
+    {
+        for(Module module : modules)
+        {
+            if(module instanceof AbstractAudioModule)
+            {
+                ((AbstractAudioModule)module).setChannelName(channelName);
+            }
+        }
     }
 
     /**
