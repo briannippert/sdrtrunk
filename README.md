@@ -31,3 +31,42 @@ committed to the code base, so it's not really 'nightly' as much as it is 'curre
 * **Operating System:** Windows (~~32 or~~ 64-bit), Linux (~~32 or~~ 64-bit) or Mac (64-bit, 12.x or higher)
 * **CPU:** 4-core
 * **RAM:** 8GB or more (preferred).  Depending on usage, 4GB may be sufficient.
+
+## Linux Setup: USB Device Permissions (udev Rules)
+
+On Linux systems, you need to install udev rules to allow non-root access to SDR USB devices. Without these rules, you'll get a **"No Tuner Available"** error when trying to start a channel.
+
+### Quick Installation
+
+Install all SDR device udev rules:
+
+```bash
+sudo cp src/main/resources/*.rules /etc/udev/rules.d/
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
+
+Then **unplug and replug your SDR device** (or reboot).
+
+### Included udev Rules
+
+The following udev rules files are provided in `src/main/resources/`:
+
+- **rtl-sdr.rules** - RTL-SDR dongles (RTL2832U-based devices)
+- **52-airspy.rules** - Airspy devices
+- **53-hackrf.rules** - HackRF devices  
+- **funcube-dongle.rules** - FunCube Dongle Pro/Pro+
+
+### Verification
+
+After installation, verify your device has proper permissions:
+
+```bash
+# Find your device
+lsusb | grep -iE "rtl|airspy|hackrf|funcube"
+
+# Check permissions (should show crw-rw-rw- or similar)
+ls -la /dev/bus/usb/XXX/YYY
+```
+
+The device should be readable and writable by your user. You should already be a member of the `plugdev` group on most systems.
